@@ -35,6 +35,7 @@
     BOOL tapToFocus = (BOOL) [command.arguments[9] boolValue];
     BOOL disableExifHeaderStripping = (BOOL) [command.arguments[10] boolValue]; // ignore Android only
     BOOL storeToFile = (BOOL) [command.arguments[11] boolValue]; // ignore Android only
+    CGFloat forcedOrientation = (CGFloat)[command.arguments[12] floatValue];// ignore, Android problem
 
     // Create the session manager
     self.sessionManager = [[CameraSessionManager alloc] init];

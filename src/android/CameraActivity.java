@@ -91,6 +91,7 @@ public class CameraActivity extends Fragment {
   public int y;
 
   public String previewImage;
+  public int forcedOrientation;
 
   public void setEventListener(CameraPreviewListener listener){
     eventListener = listener;
@@ -425,7 +426,7 @@ public class CameraActivity extends Fragment {
       Log.d(TAG, "CameraPreview jpegPictureCallback");
 
       try {
-        if (!disableExifHeaderStripping) {
+        if (!disableExifHeaderStripping || forcedOrientation >= 0) {
           Matrix matrix = new Matrix();
           if (cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
             matrix.preScale(1.0f, -1.0f);
@@ -433,6 +434,7 @@ public class CameraActivity extends Fragment {
 
           ExifInterface exifInterface = new ExifInterface(new ByteArrayInputStream(data));
           int rotation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+          if (forcedOrientation >= 0) rotation = forcedOrientation; // forcing rotation if its setted
           int rotationInDegrees = exifToDegrees(rotation);
 
           if (rotation != 0f) {
