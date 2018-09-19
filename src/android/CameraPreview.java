@@ -64,6 +64,7 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
   private static final String SET_WHITE_BALANCE_MODE_ACTION = "setWhiteBalanceMode";
   private static final String SET_BACK_BUTTON_CALLBACK = "onBackButton";
   private static final String GET_CAMERA_CHARACTERISTICS_ACTION = "getCameraCharacteristics";
+  private static final String GET_CAMERA_PREVIEW = "getCameraPreview";
 
   private static final int CAM_REQ_CODE = 0;
 
@@ -162,7 +163,9 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
       return getSupportedColorEffects(callbackContext);
     } else if (GET_CAMERA_CHARACTERISTICS_ACTION.equals(action)) {
       return getCameraCharacteristics(callbackContext);
-    }  
+    } else if (GET_CAMERA_PREVIEW.equals(action)) {
+      return getCameraPreview(callbackContext);
+    }
     return false;
   }
 
@@ -927,6 +930,20 @@ private boolean getSupportedFocusModes(CallbackContext callbackContext) {
     Log.d(TAG, "Back button tapped, notifying");
     PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, "Back button pressed");
     tapBackButtonContext.sendPluginResult(pluginResult);
+  }
+
+  private boolean getCameraPreview(CallbackContext callbackContext) {
+    Log.d(TAG, "Request camera preview");
+    JSONObject json = new JSONObject();
+    try {
+      json.put("image", fragment.previewImage);
+    }
+    catch (JSONException e) {
+      // not interested
+    }
+    PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, json);
+    callbackContext.sendPluginResult(pluginResult);
+    return true;
   }
 
   private boolean getCameraCharacteristics(CallbackContext callbackContext) {

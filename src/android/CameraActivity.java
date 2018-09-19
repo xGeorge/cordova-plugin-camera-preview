@@ -90,6 +90,8 @@ public class CameraActivity extends Fragment {
   public int x;
   public int y;
 
+  public String previewImage;
+
   public void setEventListener(CameraPreviewListener listener){
     eventListener = listener;
   }
@@ -302,6 +304,7 @@ public class CameraActivity extends Fragment {
             FrameLayout.LayoutParams camViewLayout = new FrameLayout.LayoutParams(frameContainerLayout.getWidth(), frameContainerLayout.getHeight());
             camViewLayout.gravity = Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL;
             frameCamContainerLayout.setLayoutParams(camViewLayout);
+            mCamera.setPreviewCallback(previewCallback);
           }
         }
       });
@@ -628,4 +631,30 @@ public class CameraActivity extends Fragment {
       Math.round((y + 100) * 2000 / height - 1000)
     );
   }
+
+  private Camera.PreviewCallback previewCallback = new Camera.PreviewCallback() {
+    @Override
+    public void onPreviewFrame(byte[] data, Camera camera) {
+      try {
+        Camera.Parameters parameters = mCamera.getParameters();
+        Matrix matrix = new Matrix();
+        matrix.preRotate(mPreview.getDisplayOrientation());
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        YuvImage yuvImage = new YuvImage(data, parameters.getPreviewFormat(), parameters.getPreviewSize().width, parameters.getPreviewSize().height, null);
+        yuvImage.compressToJpeg(new Rect(0, 0, parameters.getPreviewSize().width, parameters.getPreviewSize().height), 90, out);
+        byte[] imageBytes = out.toByteArray();
+         Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+        bitmap = applyMatrix(bitmap, matrix);
+         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 99, outputStream);
+        data = outputStream.toByteArray();
+        out.flush();
+        out.close();
+        previewImage = Base64.encodeToString(data, Base64.NO_WRAP);
+      }
+      catch(Exception e) {
+        Log.d(TAG, "onPreviewFrame failing due " + e);
+      }
+     }
+  };
 }

@@ -5,7 +5,7 @@
 #import "CameraSessionManager.h"
 #import "CameraRenderController.h"
 
-@interface CameraPreview : CDVPlugin <TakePictureDelegate, FocusDelegate>
+@interface CameraPreview : CDVPlugin <TakePictureDelegate, FocusDelegate, PreviewDelegate>
 
 - (void) startCamera:(CDVInvokedUrlCommand*)command;
 - (void) stopCamera:(CDVInvokedUrlCommand*)command;
@@ -41,7 +41,11 @@
 - (void) invokeTakePicture;
 
 - (void) invokeTapToFocus:(CGPoint) point;
+- (void) invokePreviewDispatch:(CIImage*) preview;
 
++ (NSString *)previewImage;
+
+@property(strong, nonatomic, readwrite) NSString *previewImage;
 @property (nonatomic) CameraSessionManager *sessionManager;
 @property (nonatomic) CameraRenderController *cameraRenderController;
 @property (nonatomic) NSString *onPictureTakenHandlerId;
