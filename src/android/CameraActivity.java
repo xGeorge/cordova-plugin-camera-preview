@@ -90,6 +90,9 @@ public class CameraActivity extends Fragment {
   public int x;
   public int y;
 
+  public String previewImage;
+  public int forcedOrientation;
+
   public void setEventListener(CameraPreviewListener listener){
     eventListener = listener;
   }
@@ -302,6 +305,7 @@ public class CameraActivity extends Fragment {
             FrameLayout.LayoutParams camViewLayout = new FrameLayout.LayoutParams(frameContainerLayout.getWidth(), frameContainerLayout.getHeight());
             camViewLayout.gravity = Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL;
             frameCamContainerLayout.setLayoutParams(camViewLayout);
+            mCamera.setPreviewCallback(previewCallback);
           }
         }
       });
@@ -422,7 +426,7 @@ public class CameraActivity extends Fragment {
       Log.d(TAG, "CameraPreview jpegPictureCallback");
 
       try {
-        if (!disableExifHeaderStripping) {
+        if (!disableExifHeaderStripping || forcedOrientation >= 0) {
           Matrix matrix = new Matrix();
           if (cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT) {
             matrix.preScale(1.0f, -1.0f);
@@ -430,6 +434,17 @@ public class CameraActivity extends Fragment {
 
           ExifInterface exifInterface = new ExifInterface(new ByteArrayInputStream(data));
           int rotation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+          if (forcedOrientation >= 0) {
+            switch (forcedOrientation) {
+              case ExifInterface.ORIENTATION_ROTATE_90:
+                if (!mCamera.getParameters().get("rotation").equals("90")) {
+                  rotation = forcedOrientation; // forcing rotation if its setted
+                }
+                break;
+              default:
+                LOG.d(TAG, "Need to be implemented");
+            }
+          }
           int rotationInDegrees = exifToDegrees(rotation);
 
           if (rotation != 0f) {
@@ -555,25 +570,23 @@ public class CameraActivity extends Fragment {
       }
 
       canTakePicture = false;
-
       new Thread() {
         public void run() {
+          mCamera.stopPreview();
           Camera.Parameters params = mCamera.getParameters();
-
           Camera.Size size = getOptimalPictureSize(width, height, params.getPreviewSize(), params.getSupportedPictureSizes());
           params.setPictureSize(size.width, size.height);
+          params.setPreviewSize(size.width, size.height);
           currentQuality = quality;
 
-          if(cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT && !storeToFile) {
+          if (cameraCurrentlyLocked == Camera.CameraInfo.CAMERA_FACING_FRONT && !storeToFile) {
             // The image will be recompressed in the callback
             params.setJpegQuality(99);
           } else {
             params.setJpegQuality(quality);
           }
-
-          params.setRotation(mPreview.getDisplayOrientation());
-
           mCamera.setParameters(params);
+          mCamera.startPreview();
           mCamera.takePicture(shutterCallback, null, jpegPictureCallback);
         }
       }.start();
@@ -628,4 +641,30 @@ public class CameraActivity extends Fragment {
       Math.round((y + 100) * 2000 / height - 1000)
     );
   }
+
+  private Camera.PreviewCallback previewCallback = new Camera.PreviewCallback() {
+    @Override
+    public void onPreviewFrame(byte[] data, Camera camera) {
+      try {
+        Camera.Parameters parameters = mCamera.getParameters();
+        Matrix matrix = new Matrix();
+        matrix.preRotate(mPreview.getDisplayOrientation());
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        YuvImage yuvImage = new YuvImage(data, parameters.getPreviewFormat(), parameters.getPreviewSize().width, parameters.getPreviewSize().height, null);
+        yuvImage.compressToJpeg(new Rect(0, 0, parameters.getPreviewSize().width, parameters.getPreviewSize().height), 90, out);
+        byte[] imageBytes = out.toByteArray();
+         Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+        bitmap = applyMatrix(bitmap, matrix);
+         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 99, outputStream);
+        data = outputStream.toByteArray();
+        out.flush();
+        out.close();
+        previewImage = Base64.encodeToString(data, Base64.NO_WRAP);
+      }
+      catch(Exception e) {
+        Log.d(TAG, "onPreviewFrame failing due " + e);
+      }
+     }
+  };
 }

@@ -32,7 +32,8 @@ CameraPreview.startCamera = function(options, onSuccess, onError) {
     }
     options.disableExifHeaderStripping = options.disableExifHeaderStripping || false;
     options.storeToFile = options.storeToFile || false;
-    exec(onSuccess, onError, PLUGIN_NAME, "startCamera", [options.x, options.y, options.width, options.height, options.camera, options.tapPhoto, options.previewDrag, options.toBack, options.alpha, options.tapFocus, options.disableExifHeaderStripping, options.storeToFile]);
+    options.forcedOrientation = options.forcedOrientation || -1;
+    exec(onSuccess, onError, PLUGIN_NAME, "startCamera", [options.x, options.y, options.width, options.height, options.camera, options.tapPhoto, options.previewDrag, options.toBack, options.alpha, options.tapFocus, options.disableExifHeaderStripping, options.storeToFile, options.forcedOrientation]);
 };
 
 CameraPreview.stopCamera = function(onSuccess, onError) {
@@ -205,6 +206,10 @@ CameraPreview.getCameraCharacteristics = function(onSuccess, onError) {
     exec(onSuccess, onError, PLUGIN_NAME, "getCameraCharacteristics", []);
 };
 
+CameraPreview.getCameraPreview = function(onSuccess, onError) {
+    exec(onSuccess, onError, PLUGIN_NAME, "getCameraPreview", []);
+};
+
 CameraPreview.FOCUS_MODE = {
     FIXED: 'fixed',
     AUTO: 'auto',
@@ -259,6 +264,10 @@ CameraPreview.COLOR_EFFECT = {
 CameraPreview.CAMERA_DIRECTION = {
     BACK: 'back',
     FRONT: 'front'
+};
+
+CameraPreview.FORCE_ORIENTATION = {
+    PORTRAIT: 6
 };
 
 module.exports = CameraPreview;

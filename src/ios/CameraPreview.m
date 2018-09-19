@@ -35,6 +35,7 @@
     BOOL tapToFocus = (BOOL) [command.arguments[9] boolValue];
     BOOL disableExifHeaderStripping = (BOOL) [command.arguments[10] boolValue]; // ignore Android only
     BOOL storeToFile = (BOOL) [command.arguments[11] boolValue]; // ignore Android only
+    CGFloat forcedOrientation = (CGFloat)[command.arguments[12] floatValue];// ignore, Android problem
 
     // Create the session manager
     self.sessionManager = [[CameraSessionManager alloc] init];
@@ -723,22 +724,36 @@
 
         CGImageRef finalImage = [self.cameraRenderController.ciContext createCGImage:finalCImage fromRect:finalCImage.extent];
         UIImage *resultImage = [UIImage imageWithCGImage:finalImage];
-
         double radians = [self radiansFromUIImageOrientation:resultImage.imageOrientation];
         CGImageRef resultFinalImage = [self CGImageRotated:finalImage withRadians:radians];
-
         CGImageRelease(finalImage); // release CGImageRef to remove memory leaks
-
         NSString *base64Image = [self getBase64Image:resultFinalImage withQuality:quality];
-
         CGImageRelease(resultFinalImage); // release CGImageRef to remove memory leaks
-
         [params addObject:base64Image];
-
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:params];
         [pluginResult setKeepCallbackAsBool:true];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:self.onPictureTakenHandlerId];
       }
     }];
+}
+
+- (void) getCameraPreview:(CDVInvokedUrlCommand*)command {
+  NSLog(@"getCameraPreview");
+  NSMutableDictionary *response = [[NSMutableDictionary alloc] init];
+  [response setValue:self.previewImage forKey:@"image"];
+  CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:response];
+  //[pluginResult setKeepCallbackAsBool:true];
+  [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+ - (void) invokePreviewDispatch:(CIImage*) preview {
+    CGImageRef finalImage = [self.cameraRenderController.ciContext createCGImage:preview fromRect:preview.extent];
+    UIImage *resultImage = [UIImage imageWithCGImage:finalImage];
+    double radians = [self radiansFromUIImageOrientation:resultImage.imageOrientation];
+    CGImageRef resultFinalImage = [self CGImageRotated:finalImage withRadians:radians];
+    CGImageRelease(finalImage); // release CGImageRef to remove memory leaks
+    CGFloat quality = 99;
+    self.previewImage = [self getBase64Image:resultFinalImage withQuality:quality];
+    CGImageRelease(resultFinalImage); // release CGImageRef to remove memory leaks
 }
 @end
